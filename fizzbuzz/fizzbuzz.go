@@ -6,6 +6,35 @@ import (
 	"strings"
 )
 
+func main() {
+	// Create processing/filtering pipeline
+	in := createPipeline(
+		makeGenerator(),
+		makeLimitFilter(15),
+		makeValueFilter(3, "fizz"),
+		makeValueFilter(5, "buzz"),
+		makeValueFilter(6, "boom"),
+		makeValueFilter(9, "bang"),
+	)
+
+	// Display all values that are passed through the pipeline
+	for v := range in {
+		fmt.Println(v)
+	}
+}
+
+// Pipeline factory
+func createPipeline(gen Generator, filters ...Filter) <-chan Val {
+	ch := gen()
+
+	for _, f := range filters {
+		// Add filter to the chain
+		ch = f(ch)
+	}
+
+	return ch
+}
+
 // Val is a supporting type to hold and represent enumerated value
 type Val struct {
 	i int
@@ -26,17 +55,19 @@ func (v Val) String() string {
 // Generator type
 type Generator func() <-chan Val
 
-// Generate integer stream
-func gen() <-chan Val {
-	ch := make(chan Val)
+// Create Val generator
+func makeGenerator() Generator {
+	return func() <-chan Val {
+		ch := make(chan Val)
 
-	go func() {
-		for i := 1; ; i++ {
-			ch <- Val{i: i, s: make([]string, 0, 2)}
-		}
-	}()
+		go func() {
+			for i := 1; ; i++ {
+				ch <- Val{i: i, s: make([]string, 0, 2)}
+			}
+		}()
 
-	return ch
+		return ch
+	}
 }
 
 // Filter is generic interface to a filtering function
@@ -87,48 +118,4 @@ func makeValueFilter(div int, msg string) Filter {
 			out <- v
 		}
 	})
-}
-
-func setupPipeLine(gen Generator, filters ...Filter) <-chan Val {
-	ch := gen()
-
-	for _, f := range filters {
-		// Add filter to the chain
-		ch = f(ch)
-	}
-
-	return ch
-}
-
-func main() {
-	// Create limit filter
-	limiter := makeLimitFilter(15)
-
-	// Create value filters
-	fizzer := makeValueFilter(3, "fizz")
-	buzzer := makeValueFilter(5, "buzz")
-	boomer := makeValueFilter(7, "boom")
-
-	// Naive setup of the pipe-line
-	//  // Setup generator
-	//	in := gen()
-	//
-	//	// set limit on provided data stream
-	//	in = limiter(in)
-	//
-	//	// chain value filters
-	//	in = fizzer(in)
-	//	in = buzzer(in)
-	//	in = boomer(in)
-
-	// Instead of ~10 previous lines it can be expressed as...
-	// in := boomer(buzzer(fizzer(limiter(gen()))))
-
-	// or use setupPipeline() helper
-	in := setupPipeLine(gen, limiter, fizzer, buzzer, boomer)
-
-	// Main logic implemented as a simple stream processing
-	for v := range in {
-		fmt.Println(v)
-	}
 }
