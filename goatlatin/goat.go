@@ -49,7 +49,7 @@ func string_to_goat_latin(s string) {
 		}
 
 		// Rule #2 + end of rule #1
-		w = append(w, []rune("ma")...)
+		w = append(w, 'm', 'a')
 
 		// Rule #3
 		w = append(w, mult('a', cnt)...)

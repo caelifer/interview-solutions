@@ -6,8 +6,25 @@ import (
 	"strings"
 )
 
+// Val is a supporting type to hold and represent enumerated value
+type Val struct {
+	i int
+	s []string
+}
+
+// String pretty printer for Val type. It outputs either space-joined V.s,
+// or V.i in string form.
+func (v Val) String() string {
+	s := strconv.Itoa(v.i)
+	if len(v.s) > 0 {
+		s = strings.Join(v.s, " ")
+	}
+	return s
+}
+
+// Start of the program
 func main() {
-	// Create processing/filtering pipeline
+	// Create filtering pipeline
 	in := createPipeline(
 		makeGenerator(),
 		makeLimitFilter(15),
@@ -25,31 +42,14 @@ func main() {
 
 // Pipeline factory
 func createPipeline(gen Generator, filters ...Filter) <-chan Val {
+	// Start generator
 	ch := gen()
-
 	for _, f := range filters {
 		// Add filter to the chain
 		ch = f(ch)
 	}
-
+	// Return resulting channel
 	return ch
-}
-
-// Val is a supporting type to hold and represent enumerated value
-type Val struct {
-	i int
-	s []string
-}
-
-// String - outputs either stringify number or accumulated phrase
-func (v Val) String() string {
-	s := strconv.Itoa(v.i)
-
-	if len(v.s) > 0 {
-		s = strings.Join(v.s, " ")
-	}
-
-	return s
 }
 
 // Generator type
@@ -59,13 +59,11 @@ type Generator func() <-chan Val
 func makeGenerator() Generator {
 	return func() <-chan Val {
 		ch := make(chan Val)
-
 		go func() {
 			for i := 1; ; i++ {
-				ch <- Val{i: i, s: make([]string, 0, 2)}
+				ch <- Val{i, make([]string, 0, 1)}
 			}
 		}()
-
 		return ch
 	}
 }
@@ -73,49 +71,59 @@ func makeGenerator() Generator {
 // Filter is generic interface to a filtering function
 type Filter func(in <-chan Val) <-chan Val
 
-// Logic function that does the actual filterign
-type FilterLogic func(out chan<- Val, in <-chan Val)
+// Logic function that does the actual filtering
+type FilterLogicFn func(out chan<- Val, in <-chan Val)
 
-func genericFilterFuction(filter FilterLogic) Filter {
+// apply creats Filter by applying specified FilterLogicFn
+func apply(fl FilterLogicFn) Filter {
 	return func(in <-chan Val) <-chan Val {
 		out := make(chan Val)
 		go func() {
 			defer close(out)
-			filter(out, in)
+			fl(out, in)
 		}()
 		return out
 	}
 }
 
-// Limit filter generator
-func makeLimitFilter(limit int) Filter {
-	return genericFilterFuction(func(out chan<- Val, in <-chan Val) {
+// Limit filter implementation. Must use function to capture
+// parameter in a closure
+func limitFn(limit int) FilterLogicFn {
+	return func(out chan<- Val, in <-chan Val) {
 		for i := 0; i < limit; i++ {
 			v, ok := <-in
 			if !ok {
 				break
 			}
-
 			// passthrough
 			out <- v
 		}
-	})
+	}
 }
 
-// Value fliter generator
-func makeValueFilter(div int, msg string) Filter {
-	return genericFilterFuction(func(out chan<- Val, in <-chan Val) {
+// Limit filter generator
+func makeLimitFilter(limit int) Filter {
+	return apply(limitFn(limit))
+}
+
+// Value filter implementaion
+func valueFn(div int, msg string) FilterLogicFn {
+	return func(out chan<- Val, in <-chan Val) {
 		for {
 			v, ok := <-in
 			if !ok {
 				break
 			}
-
 			// Check if number if divisible by our divizor
 			if v.i%div == 0 {
 				v.s = append(v.s, msg)
 			}
 			out <- v
 		}
-	})
+	}
+}
+
+// Value fliter generator
+func makeValueFilter(num int, msg string) Filter {
+	return apply(valueFn(num, msg))
 }
