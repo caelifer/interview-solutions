@@ -54,4 +54,3 @@ sub string_to_goat_latin {
 }
 
 string_to_goat_latin('I speak Goat Latin');
-
