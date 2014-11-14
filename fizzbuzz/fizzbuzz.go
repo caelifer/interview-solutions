@@ -33,7 +33,6 @@ func main() {
 		makeValueFilter(6, "boom"),
 		makeValueFilter(9, "bang"),
 	)
-
 	// Display all values that are passed through the pipeline
 	for v := range in {
 		fmt.Println(v)
@@ -63,6 +62,7 @@ func makeGenerator() Generator {
 			for i := 1; ; i++ {
 				ch <- Val{i, make([]string, 0, 1)}
 			}
+			close(ch)
 		}()
 		return ch
 	}
@@ -79,7 +79,7 @@ func apply(fl FilterLogicFn) Filter {
 	return func(in <-chan Val) <-chan Val {
 		out := make(chan Val)
 		go func() {
-			defer close(out)
+			defer close(out) // Always close channel, even if fl() panics
 			fl(out, in)
 		}()
 		return out
