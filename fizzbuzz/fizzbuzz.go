@@ -27,7 +27,7 @@ func main() {
 	// Create filtering pipeline
 	in := createPipeline(
 		makeGenerator(),
-		makeLimitFilter(15),
+		makeLimitFilter(45),
 		makeValueFilter(3, "fizz"),
 		makeValueFilter(5, "buzz"),
 		makeValueFilter(6, "boom"),
@@ -86,44 +86,39 @@ func apply(fl FilterLogicFn) Filter {
 	}
 }
 
-// Limit filter implementation. Must use function to capture
-// parameter in a closure
-func limitFn(limit int) FilterLogicFn {
-	return func(out chan<- Val, in <-chan Val) {
-		for i := 0; i < limit; i++ {
-			v, ok := <-in
-			if !ok {
-				break
-			}
-			// passthrough
-			out <- v
-		}
-	}
-}
-
-// Limit filter generator
+// Limit filter generated implementation.
+// Must use function to capture parameter in a closure
 func makeLimitFilter(limit int) Filter {
-	return apply(limitFn(limit))
-}
-
-// Value filter implementaion
-func valueFn(div int, msg string) FilterLogicFn {
-	return func(out chan<- Val, in <-chan Val) {
-		for {
-			v, ok := <-in
-			if !ok {
-				break
+	return apply(func(limit int) FilterLogicFn {
+		return func(out chan<- Val, in <-chan Val) {
+			for i := 0; i < limit; i++ {
+				v, ok := <-in
+				if !ok {
+					break
+				}
+				// passthrough
+				out <- v
 			}
-			// Check if number if divisible by our divizor
-			if v.i%div == 0 {
-				v.s = append(v.s, msg)
-			}
-			out <- v
 		}
-	}
+	}(limit))
 }
 
-// Value fliter generator
+// Value filter generator implementaion
+// Must use function to capture parameter in a closure
 func makeValueFilter(num int, msg string) Filter {
-	return apply(valueFn(num, msg))
+	return apply(func(div int, msg string) FilterLogicFn {
+		return func(out chan<- Val, in <-chan Val) {
+			for {
+				v, ok := <-in
+				if !ok {
+					break
+				}
+				// Check if number if divisible by our divizor
+				if v.i%div == 0 {
+					v.s = append(v.s, msg)
+				}
+				out <- v
+			}
+		}
+	}(num, msg))
 }
