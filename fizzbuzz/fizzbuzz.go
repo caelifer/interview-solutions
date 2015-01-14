@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 )
@@ -62,7 +63,6 @@ func makeGenerator() Generator {
 			for i := 1; ; i++ {
 				ch <- Val{i, make([]string, 0, 1)}
 			}
-			close(ch)
 		}()
 		return ch
 	}
@@ -72,10 +72,10 @@ func makeGenerator() Generator {
 type Filter func(in <-chan Val) <-chan Val
 
 // Logic function that does the actual filtering
-type FilterLogicFn func(out chan<- Val, in <-chan Val)
+type FilterOpFn func(out chan<- Val, in <-chan Val)
 
-// apply creats Filter by applying specified FilterLogicFn
-func apply(fl FilterLogicFn) Filter {
+// apply creats Filter by applying specified FilterOpFn
+func apply(fl FilterOpFn) Filter {
 	return func(in <-chan Val) <-chan Val {
 		out := make(chan Val)
 		go func() {
@@ -89,7 +89,7 @@ func apply(fl FilterLogicFn) Filter {
 // Limit filter generated implementation.
 // Must use function to capture parameter in a closure
 func makeLimitFilter(limit int) Filter {
-	return apply(func(limit int) FilterLogicFn {
+	return apply(func(limit int) FilterOpFn {
 		return func(out chan<- Val, in <-chan Val) {
 			for i := 0; i < limit; i++ {
 				v, ok := <-in
@@ -106,7 +106,7 @@ func makeLimitFilter(limit int) Filter {
 // Value filter generator implementaion
 // Must use function to capture parameter in a closure
 func makeValueFilter(num int, msg string) Filter {
-	return apply(func(div int, msg string) FilterLogicFn {
+	return apply(func(div int, msg string) FilterOpFn {
 		return func(out chan<- Val, in <-chan Val) {
 			for {
 				v, ok := <-in
