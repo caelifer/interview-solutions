@@ -18,7 +18,6 @@
 
   would return: 'Imaa peaksmaaa oatGmaaaa atinLmaaaaa'
 */
-
 package main
 
 import (
@@ -73,9 +72,9 @@ func isVowel(r rune) bool {
 }
 
 // Generate string with c runes
-func mult(r rune, c int) []rune {
-	res := make([]rune, c)
-	for i := 0; i < c; i++ {
+func mult(r rune, mult int) []rune {
+	res := make([]rune, mult)
+	for i := 0; i < mult; i++ {
 		res[i] = r
 	}
 	return res
