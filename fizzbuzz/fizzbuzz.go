@@ -104,8 +104,8 @@ func makeLimitFilter(limit int) Filter {
 
 // Value filter generator implementaion
 // Must use function to capture parameter in a closure
-func makeValueFilter(num int, msg string) Filter {
-	return apply(func(div int, msg string) FilterOpFn {
+func makeValueFilter(num int, tag string) Filter {
+	return apply(func(div int, tag string) FilterOpFn {
 		return func(out chan<- Val, in <-chan Val) {
 			for {
 				v, ok := <-in
@@ -114,10 +114,10 @@ func makeValueFilter(num int, msg string) Filter {
 				}
 				// Check if number if divisible by our divizor
 				if v.i%div == 0 {
-					v.s = append(v.s, msg)
+					v.s = append(v.s, tag)
 				}
 				out <- v
 			}
 		}
-	}(num, msg))
+	}(num, tag))
 }
