@@ -42,9 +42,7 @@ func string_to_goat_latin(s string) {
 		w := []rune(word)
 
 		// Check first letter
-		fl := rune(w[0])
-
-		if !isVowel(fl) {
+		if !isVowel(w[0]) {
 			w = append(w[1:], w[0])
 		}
 
