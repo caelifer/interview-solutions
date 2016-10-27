@@ -49,7 +49,7 @@ func string_to_goat_latin(s string) {
 		w = append(w, 'm', 'a')
 
 		// Rule #3
-		w = append(w, mult('a', cnt)...)
+		w = append(w, repeatRune('a', cnt)...)
 
 		fmt.Printf("%s ", string(w))
 	}
@@ -72,9 +72,9 @@ func isVowel(r rune) bool {
 }
 
 // Generate string with c runes
-func mult(r rune, mult int) []rune {
+func repeatRune(r rune, mult int) []rune {
 	res := make([]rune, mult)
-	for i := 0; i < mult; i++ {
+	for i := range res {
 		res[i] = r
 	}
 	return res
