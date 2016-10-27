@@ -49,13 +49,15 @@ func string_to_goat_latin(s string) {
 
 // Translate word
 func translateWord(word string, n int) string {
+        // Split word into slice of runes
         runes := []rune(word)
         // Pre-allocate maximum needed buffer on the stack
         buf := make([]rune, len(runes)+1+2+n)
-        // Split word into slice of runes
+        // Copy word's runes into our local buffer
         copy(buf, runes)
         // Check if the first letter is a consonant
         if !isVowel(buf[0]) {
+                // Rule #1
                 buf = append(buf[1:], buf[0])
         }
         // Rule #2 + end of rule #1
