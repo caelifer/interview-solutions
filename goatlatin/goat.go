@@ -49,17 +49,21 @@ func string_to_goat_latin(s string) {
 
 // Translate word
 func translateWord(word string, n int) string {
+        runes := []rune(word)
+        // Pre-allocate maximum needed buffer on the stack
+        buf := make([]rune, len(runes)+1+2+n)
         // Split word into slice of runes
-        w := []rune(word)
+        copy(buf, runes)
         // Check if the first letter is a consonant
-        if !isVowel(w[0]) {
-                w = append(w[1:], w[0])
+        if !isVowel(buf[0]) {
+                buf = append(buf[1:], buf[0])
         }
         // Rule #2 + end of rule #1
-        w = append(w, 'm', 'a')
+        buf = append(buf, 'm', 'a')
         // Rule #3
-        w = append(w, repeatRune('a', n)...)
-        return string(w)
+        buf = append(buf, repeatRune('a', n)...)
+        // Return translated word as a string
+        return string(buf)
 }
 
 // Check if rune is an English vowel
