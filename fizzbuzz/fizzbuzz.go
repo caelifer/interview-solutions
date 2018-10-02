@@ -2,9 +2,23 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 )
+
+// Start of the program
+func main() {
+	// Create filtering pipeline and display resuluts
+	makePipeline().
+		AddFilter(makeLimitFilter(45)).        // Limit number of generated values in a stream.
+		AddFilter(makeValueFilter(3, "fizz")). // Add tag "fizz" to all values devisible by 3
+		AddFilter(makeValueFilter(5, "buzz")). // Add tag "buzz" to all values devisible by 5
+		AddFilter(makeValueFilter(7, "zang")). // Add tag "boom" to all values devisible by 7
+		AddFilter(makeValueFilter(9, "bang")). // Add tag "bang" to all values devisible by 9
+		// Display all values that are passed through the pipeline
+		Run(func(v Val) { fmt.Println(v) })
+}
 
 // Val is a supporting type to hold and represent enumerated value
 type Val struct {
@@ -22,74 +36,60 @@ func (v Val) String() string {
 	return s
 }
 
-// Start of the program
-func main() {
-	// Create filtering pipeline
-	in := createPipeline(
-		makeGenerator(),
-		makeLimitFilter(45),
-		makeValueFilter(3, "fizz"),
-		makeValueFilter(5, "buzz"),
-		makeValueFilter(6, "boom"),
-		makeValueFilter(9, "bang"),
-	)
-	// Display all values that are passed through the pipeline
-	for v := range in {
-		fmt.Println(v)
-	}
-}
+type Processor func(Val)
+
+type Sink chan<- Val
+
+type Pipeline <-chan Val
 
 // Pipeline factory
-func createPipeline(gen Generator, filters ...Filter) <-chan Val {
-	// Start generator
-	ch := gen()
-	for _, f := range filters {
-		// Add filter to the chain
-		ch = f(ch)
-	}
-	// Return resulting channel
+func makePipeline() Pipeline {
+	ch := make(chan Val)
+	go func() {
+		for i := 1; ; i++ {
+			ch <- Val{i, make([]string, 0, 1)}
+		}
+	}()
 	return ch
 }
 
-// Generator type
-type Generator func() <-chan Val
-
-// Create Val generator
-func makeGenerator() Generator {
-	return func() <-chan Val {
-		ch := make(chan Val)
-		go func() {
-			for i := 1; ; i++ {
-				ch <- Val{i, make([]string, 0, 1)}
-			}
-		}()
-		return ch
+func (p Pipeline) Run(proc Processor) {
+	for v := range p {
+		proc(v)
 	}
 }
 
-// Filter is generic interface to a filtering function
-type Filter func(in <-chan Val) <-chan Val
+func (p Pipeline) AddFilter(filter Filter) Pipeline {
+	return filter(p)
+}
 
-// Logic function that does the actual filtering
-type FilterOpFn func(out chan<- Val, in <-chan Val)
+// Filter is connecting pipelines
+type Filter func(in Pipeline) Pipeline
 
-// apply creats Filter by applying specified FilterOpFn
-func apply(fl FilterOpFn) Filter {
-	return func(in <-chan Val) <-chan Val {
+// FilterFn is a function that does the actual filtering
+type FilterFn func(out Sink, in Pipeline)
+
+// apply creats Filter by applying provided FilterFn
+func apply(filterFn FilterFn) Filter {
+	return func(in Pipeline) Pipeline {
 		out := make(chan Val)
 		go func() {
-			defer close(out) // Always close channel, even if fl() panics
-			fl(out, in)
+			defer func() {
+				if err := recover(); err != nil {
+					log.Printf("pipeline paniced: %v", err)
+				}
+				close(out) // Always close channel, even if filterFn() panics
+			}()
+			filterFn(out, in)
 		}()
 		return out
 	}
 }
 
-// Limit filter generated implementation.
-// Must use function to capture parameter in a closure
+// Limiting filter generator implemented as closure to capture provided parameter.
 func makeLimitFilter(limit int) Filter {
-	return apply(func(limit int) FilterOpFn {
-		return func(out chan<- Val, in <-chan Val) {
+	return apply(func(limit int) FilterFn {
+		return func(out Sink, in Pipeline) {
 			for i := 0; i < limit; i++ {
 				v, ok := <-in
 				if !ok {
@@ -102,11 +102,10 @@ func makeLimitFilter(limit int) Filter {
 	}(limit))
 }
 
-// Value filter generator implementaion
-// Must use function to capture parameter in a closure
+// Value filter generator implemented as closure to capture provided parameter.
 func makeValueFilter(num int, tag string) Filter {
-	return apply(func(div int, tag string) FilterOpFn {
-		return func(out chan<- Val, in <-chan Val) {
+	return apply(func(div int, tag string) FilterFn {
+		return func(out Sink, in Pipeline) {
 			for {
 				v, ok := <-in
 				if !ok {
