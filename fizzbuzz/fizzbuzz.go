@@ -1,3 +1,9 @@
+// This program implements "fizz/buzz" solution in a rather overrengineered sort of way.
+// Running example can be found here:
+//
+//     https://play.golang.org/p/eWKpObPXf8G
+//
+// This example studies the way to implement functional style programming in Go.
 package main
 
 import (
