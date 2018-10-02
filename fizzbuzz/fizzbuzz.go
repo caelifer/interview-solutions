@@ -75,7 +75,8 @@ type Filter func(in Pipeline) Pipeline
 // FilterFn is a function that does the actual filtering
 type FilterFn func(out Sink, in Pipeline)
 
-// apply creats Filter by applying provided FilterFn
+// apply creates Filter by applying provided FilterFn. It takes care of resources by closing
+// channels at the appropriate time. It also handles panics in filtering funcitons.
 func apply(filterFn FilterFn) Filter {
 	return func(in Pipeline) Pipeline {
 		out := make(chan Val)
