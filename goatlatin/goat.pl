@@ -1,4 +1,4 @@
-#/usr/bin/perl -w
+#!/usr/bin/perl -w
 
 # Goat Latin is a made-up language based off of English, sort of like Pig Latin.
 # The rules of Goat Latin are as follows:
