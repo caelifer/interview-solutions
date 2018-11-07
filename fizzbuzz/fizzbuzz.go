@@ -31,8 +31,7 @@ type Val struct {
 	s []string
 }
 
-// String pretty printer for Val type. It outputs either space-joined V.s,
-// or V.i in string form.
+// String pretty printer for Val type. It outputs either space-joined V.s or V.i in string form.
 func (v Val) String() string {
 	s := strconv.Itoa(v.i)
 	if len(v.s) > 0 {
@@ -41,13 +40,19 @@ func (v Val) String() string {
 	return s
 }
 
+// Pipeline helper types
+
+// Processor is a functor object used to process each value in a filtered pipeline.
 type Processor func(Val)
 
+// Sink is a helper type to denote collector in the pipeline chain.
 type Sink chan<- Val
 
+// Pipeline is a helper object to represent generator int he pipeline chain.
 type Pipeline <-chan Val
 
-// Pipeline factory
+// makePipeline is a Pipeline factory function. It creates generator responsible for
+// creating initial stream of Val values.
 func makePipeline() Pipeline {
 	ch := make(chan Val)
 	go func() {
@@ -58,39 +63,25 @@ func makePipeline() Pipeline {
 	return ch
 }
 
+// Run method wraps final collector.
 func (p Pipeline) Run(proc Processor) {
 	for v := range p {
 		proc(v)
 	}
 }
 
+// AddFilter method inserts new Filter node into a Pipeline.
 func (p Pipeline) AddFilter(filter Filter) Pipeline {
 	return filter(p)
 }
 
-// Filter is connecting pipelines
+// Filter is a helper type that create new generator, based on the processed stream from `in` Pipeline, effectively
+// creating a new node in the chain of connected Pipeline objects.
 type Filter func(in Pipeline) Pipeline
 
-// FilterFn is a function that does the actual filtering
+// FilterFn is a function that does the actual filtering by recieving a Val object from `in`, processing it, and
+// optionally passing it out to `out` Sink.
 type FilterFn func(out Sink, in Pipeline)
-
-// apply creates Filter by applying provided FilterFn. It takes care of resources by closing
-// channels at the appropriate time. It also handles panics in filtering funcitons.
-func apply(filterFn FilterFn) Filter {
-	return func(in Pipeline) Pipeline {
-		out := make(chan Val)
-		go func() {
-			defer func() {
-				if err := recover(); err != nil {
-					log.Printf("pipeline paniced: %v", err)
-				}
-				close(out) // Always close channel, even if filterFn() panics
-			}()
-			filterFn(out, in)
-		}()
-		return out
-	}
-}
 
 // Limiting filter generator implemented as closure to capture provided parameter.
 func makeLimitFilter(limit int) Filter {
@@ -125,4 +116,22 @@ func makeValueFilter(num int, tag string) Filter {
 			}
 		}
 	}(num, tag))
+}
+
+// apply constructs a new Filter by applying provided FilterFn. It takes care of resources by closing
+// `out` channels at the appropriate time. It also handles panics in filtering funcitons.
+func apply(filterFn FilterFn) Filter {
+	return func(in Pipeline) Pipeline {
+		out := make(chan Val)
+		go func() {
+			defer func() {
+				if err := recover(); err != nil {
+					log.Printf("pipeline paniced: %v", err)
+				}
+				close(out) // Always close channel, even if filterFn() panics
+			}()
+			filterFn(out, in)
+		}()
+		return out
+	}
 }
