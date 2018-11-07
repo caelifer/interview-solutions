@@ -18,12 +18,11 @@ func main() {
 	// Create filtering pipeline and display resuluts
 	makePipeline().
 		AddFilter(makeLimitFilter(45)).        // Limit number of generated values in a stream.
-		AddFilter(makeValueFilter(3, "fizz")). // Add tag "fizz" to all values devisible by 3
-		AddFilter(makeValueFilter(5, "buzz")). // Add tag "buzz" to all values devisible by 5
-		AddFilter(makeValueFilter(7, "zang")). // Add tag "boom" to all values devisible by 7
-		AddFilter(makeValueFilter(9, "bang")). // Add tag "bang" to all values devisible by 9
-		// Display all values that are passed through the pipeline
-		Run(func(v Val) { fmt.Println(v) })
+		AddFilter(makeValueFilter(3, "fizz")). // Add tag "fizz" to all values devisible by 3.
+		AddFilter(makeValueFilter(5, "buzz")). // Add tag "buzz" to all values devisible by 5.
+		AddFilter(makeValueFilter(7, "zang")). // Add tag "boom" to all values devisible by 7.
+		AddFilter(makeValueFilter(9, "bang")). // Add tag "bang" to all values devisible by 9.
+		Run(func(v Val) { fmt.Println(v) })    // Collect and display filtered values.
 }
 
 // Val is a supporting type to hold and represent enumerated value
