@@ -21,6 +21,7 @@ that sentence in Goat Latin. For example:
 
 should print: 'Imaa peaksmaaa oatGmaaaa atinLmaaaaa'
 */
+
 package main
 
 import (
@@ -74,9 +75,8 @@ func isVowel(r rune) bool {
 	// a e i o u A E I O U
 	case 'a', 'A', 'e', 'E', 'i', 'I', 'o', 'O', 'u', 'U':
 		return true
-	default:
-		return false
 	}
+	return false
 }
 
 // Generate slice of N runes
