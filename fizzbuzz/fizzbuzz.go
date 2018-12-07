@@ -50,7 +50,7 @@ type Processor func(Val)
 // Sink is a helper type to denote collector in the pipeline chain.
 type Sink chan<- Val
 
-// Pipeline is a helper object to represent generator int he pipeline chain.
+// Pipeline is a helper object to represent generator in the pipeline chain.
 type Pipeline <-chan Val
 
 // makePipeline is a Pipeline factory function. It creates generator responsible for
@@ -110,7 +110,7 @@ func makeValueFilter(num int, tag string) Filter {
 				if !ok {
 					break
 				}
-				// Check if number if divisible by our divizor
+				// Check if number if divisible by our divizor.
 				if v.i%div == 0 {
 					v.s = append(v.s, tag)
 				}
@@ -130,7 +130,7 @@ func apply(filterFn FilterFn) Filter {
 				if err := recover(); err != nil {
 					log.Printf("pipeline paniced: %v", err)
 				}
-				close(out) // Always close channel, even if filterFn() panics
+				close(out) // Always close channel, even if filterFn() panics.
 			}()
 			filterFn(out, in)
 		}()
