@@ -11,20 +11,35 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 )
 
+const DefaultUppperLimit = 25
+
 // Start of the program
 func main() {
+	upperLimit := DefaultUppperLimit
+
+	if len(os.Args) > 1 {
+		// Take first argument
+		if n, err := strconv.Atoi(os.Args[1]); err != nil {
+			log.Printf("Failed to parse %q: %v", os.Args[1], err)
+			log.Printf("Using default upper limit: %d", upperLimit)
+		} else {
+			upperLimit = n
+		}
+	}
+
 	// Create filtering pipeline and display resuluts
 	makePipeline().
-		AddFilter(makeLimitFilter(45)).        // Limit number of generated values in a stream.
-		AddFilter(makeValueFilter(3, "fizz")). // Add tag "fizz" to all values devisible by 3.
-		AddFilter(makeValueFilter(5, "buzz")). // Add tag "buzz" to all values devisible by 5.
-		AddFilter(makeValueFilter(7, "zang")). // Add tag "boom" to all values devisible by 7.
-		AddFilter(makeValueFilter(9, "bang")). // Add tag "bang" to all values devisible by 9.
-		Run(func(v Val) { fmt.Println(v) })    // Collect and display filtered values.
+		AddFilter(makeLimitFilter(upperLimit)). // Limit number of generated values in a stream.
+		AddFilter(makeValueFilter(3, "fizz")).  // Add tag "fizz" to all values devisible by 3.
+		AddFilter(makeValueFilter(5, "buzz")).  // Add tag "buzz" to all values devisible by 5.
+		AddFilter(makeValueFilter(7, "bang")).  // Add tag "bang" to all values devisible by 7.
+		AddFilter(makeValueFilter(9, "zang")).  // Add tag "zang" to all values devisible by 9.
+		Run(func(v Val) { fmt.Println(v) })     // Run pipeline and display filtered values.
 }
 
 // Val is a supporting type to hold and represent enumerated value
